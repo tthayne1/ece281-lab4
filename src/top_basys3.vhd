@@ -1,6 +1,7 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+
 -- Lab 4
 entity top_basys3 is
     port(
@@ -19,9 +20,11 @@ entity top_basys3 is
         an  :   out std_logic_vector(3 downto 0)
     );
 end top_basys3;
+
 architecture top_basys3_arch of top_basys3 is
     -- signal declarations
     signal w_slow_clk   : std_logic;
+    signal w_clk_tdm    : std_logic; 
     signal w_clk_reset  : std_logic;
     signal w_fsm_reset  : std_logic;
     signal w_floor1     : std_logic_vector(3 downto 0);
@@ -37,6 +40,7 @@ architecture top_basys3_arch of top_basys3 is
             o_seg_n : out STD_LOGIC_VECTOR (6 downto 0)
         );
     end component sevenseg_decoder;
+
     component elevator_controller_fsm is
 		Port (
             i_clk        : in  STD_LOGIC;
@@ -77,6 +81,15 @@ begin
             i_reset => w_clk_reset,
             o_clk   => w_slow_clk
         );
+
+    clkdiv_tdm_inst : clock_divider
+        generic map ( k_DIV => 50000 ) 
+        port map (
+            i_clk   => clk,
+            i_reset => w_clk_reset,
+            o_clk   => w_clk_tdm
+        );
+
     fsm1_inst : elevator_controller_fsm
         port map (
             i_clk      => w_slow_clk,
@@ -85,6 +98,7 @@ begin
             go_up_down => sw(1),
             o_floor    => w_floor1
         );
+
     fsm2_inst : elevator_controller_fsm
         port map (
             i_clk      => w_slow_clk,
@@ -93,10 +107,11 @@ begin
             go_up_down => sw(15),
             o_floor    => w_floor2
         );
+
     tdm_inst : TDM4
         generic map ( k_WIDTH => 4 )
         port map (
-            i_clk   => clk,
+            i_clk   => w_clk_tdm,
             i_reset => btnU,
             i_D3    => k_F,
             i_D2    => w_floor2,
@@ -105,6 +120,7 @@ begin
             o_data  => w_tdm_data,
             o_sel   => w_tdm_sel
         );
+
     seg_inst : sevenseg_decoder
         port map (
             i_Hex   => w_tdm_data,
